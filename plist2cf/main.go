@@ -44,18 +44,23 @@ type PlistCF struct {
 }
 
 type PlistCFP struct {
+	VarName string
+	
 	Page int `plist:"page"`
 	Cfes []PlistCFE `plist:"customFormularElemente"`
 }
 
 type PlistCFE struct {
+	VarName string
+	
 	FeldName string `plist:"feldName"`
 	Font string `plist:"font"`
+	Fontsize int `plist:"fontSize"`
 	Format string `plist:"format"`
 	Height float32 `plist:"height"`
 	Listenpos int `plist:"listenpos"`
 	Modus int `plist:"modus"`
-	HowInKarteitext int `plist:"howInKarteitext"`
+	ShowInKarteitext int `plist:"showInKarteitext"`
 	Width float32 `plist:"width"`
 	Xpos float32 `plist:"xpos"`
 	Ypos float32 `plist:"ypos"`
@@ -86,6 +91,14 @@ func filterNewLines(s string) string {
 
 
 
+
+/**/
+type ByListenpos []PlistCFE
+func (a ByListenpos) Len() int           { return len(a) }
+func (a ByListenpos) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByListenpos) Less(i, j int) bool { return a[i].Listenpos < a[j].Listenpos }
+
+
 const tmplPattern = 
 `{{template "formular" .}}`
 
@@ -93,11 +106,10 @@ const tmplFormular =
 `{{define "formular" -}}
 Formulartyp {{$.VarName}} = findUniqueOrFirstVisible("{{.Name}}");
 if ({{$.VarName}} == null) {
-	{{$.VarName}} = createCustomFormular("{{.Kuerzel}}", "{{.Name}}", "{{.Tooltip}}", );	
+	{{$.VarName}} = createCustomFormular("{{.Kuerzel}}", "{{.Name}}", "{{.Tooltip}}", {{.Art}}, "{{.Font}}", {{.Fontsize}}, {{.NumberOfDirectPages}}, {{if .OhneArztStempel}}true{{else}}false{{end}}, {{.Papersize_height}}, {{.Papersize_width}}, "{{.Xibfile}}");	
 	CustomFormularPage cfp;
 	{{range $index, $page := $.Cfps -}} 
 		{{template "page" . }}  
-		{{- $.VarName}}.addCustomFormularPages(cfp);
 	{{end}}
 	{{$.VarName}}.setCustomImage("{{.CustomImageFormated}}");
 }
@@ -105,15 +117,16 @@ if ({{$.VarName}} == null) {
 
 const tmplPage = 
 `{{define "page" -}} 
-	cfp = blabla({{.Page}});
+	cfp = createCustomFormularPage({{.Page}});
 	{{range .Cfes -}} 
 		{{template "element" . }}  
 	{{end}}
+	{{- .VarName}}.addCustomFormularPages(cfp);
 {{- end}}`
 
 const tmplElement = 
 `{{define "element" -}} 
-	cfp.addCustomFormularElement("{{.FeldName}}", {{.Listenpos}})
+	cfp.addCustomFormularElemente(createCustomFormularElement("{{.FeldName}}", "{{.Font}}", {{.Fontsize}}, "{{.Format}}", {{.Height}}, {{.Listenpos}},{{.Modus}}, {{if .ShowInKarteitext}}true{{else}}false{{end}},{{.Height}},{{.Xpos}},{{.Ypos}}));
 {{- end}}`
 
 
@@ -133,6 +146,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	result := ""
 	for iArg := 1; iArg < len(os.Args); iArg++ {
 
 		file := os.Args[iArg]
@@ -162,17 +176,25 @@ func main() {
         	log.Fatal(err)
     	}
     	data.VarName = reg.ReplaceAllString(strings.ToLower(data.Kuerzel), "")
-
-
-
-
-		// sortieren nach den listenpositionen
-		for _, page := range data.Cfps {
-			//fmt.Println("... " + page.Page)
-			sort.Slice(page.Cfes, func(i, j int) bool {
-		  		return page.Cfes[i].Listenpos < page.Cfes[j].Listenpos
-			})
+    	for i, _ := range data.Cfps {
+			data.Cfps[i].VarName = data.VarName
+			for j, _ := range data.Cfps[i].Cfes {
+				data.Cfps[i].Cfes[j].VarName = data.VarName
+			}
 		}
+
+
+		// sortieren nach den pages und listenpositionen
+		sort.Slice(data.Cfps, func(i, j int) bool {
+	  		return data.Cfps[i].Page < data.Cfps[j].Page
+		})
+		for _, page := range data.Cfps {
+			sort.Slice(page.Cfes[:], func(i, j int) bool {
+		  		return page.Cfes[i].Listenpos < page.Cfes[j].Listenpos
+			})			
+		}
+	
+
 
 		//create a new template with some name
 		tmpl := template.Must(template.New("").Parse(tmplPattern))
@@ -188,13 +210,13 @@ func main() {
 		    log.Fatal(err)
 		}
 
-		result := tpl.String()
-		fmt.Println("fertsch"+result);
-
-
-	    clipboard.WriteAll(result);
-
+		result = result + "\n\n" + tpl.String()
 	}
+
+
+	fmt.Println(""+result);
+	clipboard.WriteAll(result);
+
 	
 }
 
