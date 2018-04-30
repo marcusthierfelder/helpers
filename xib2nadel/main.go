@@ -221,6 +221,13 @@ func main() {
 				all.addPage(XIBPage{Name: ""})
 			}
 
+			// häckisch aber es geht ... es gibt kein tabview, nur ein einzelner view
+			// eigentlich bräuchte man den identifier 
+			if inElement == "customView" {
+				fmt.Println(inElement)
+				all.addPage(XIBPage{Name: ""})
+			}
+
 			if inElement == "textField" {
 				var tf XMLTextField
 				decoder.DecodeElement(&tf, &se)
@@ -262,7 +269,7 @@ func main() {
 				startsWith2 := strings.HasPrefix(keyPath, "formular.textfield_")
 
 				if startsWith1 || startsWith2 {
-					//fmt.Println("textView (" + sv.Id + ")  " + sv.Rect.X + " " + sv.Rect.Y + "  -> " + keyPath)
+					fmt.Println("textView (" + sv.Id + ")  " + sv.Rect.X + " " + sv.Rect.Y + "  -> " + keyPath)
 					xpos, _ := strconv.Atoi(sv.Rect.X)
 					ypos, _ := strconv.Atoi(sv.Rect.Y)
 					w, _ := strconv.Atoi(sv.Rect.W)
