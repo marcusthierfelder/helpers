@@ -88,7 +88,22 @@ func filterNewLines(s string) string {
     }, s)
 }
 
+func (cfe PlistCFE) FormatFormated() string {
+	str := cfe.Format
+	reg, err := regexp.Compile(`"`)
+	if err != nil {
+    	log.Fatal(err)
+	}
+	str = reg.ReplaceAllString(str, "\\\"");
 
+	reg, err = regexp.Compile(`\r?\n`)
+	if err != nil {
+    	log.Fatal(err)
+	}	
+	str = reg.ReplaceAllString(str, "\\n\" \n + \"");
+
+	return str;
+}
 
 
 
@@ -126,7 +141,7 @@ const tmplPage =
 
 const tmplElement = 
 `{{define "element" -}} 
-	cfp.addCustomFormularElemente(createCustomFormularElement("{{.FeldName}}", "{{.Font}}", {{.Fontsize}}, "{{.Format}}", {{.Height}}, {{.Listenpos}},{{.Modus}}, {{if .ShowInKarteitext}}true{{else}}false{{end}},{{.Height}},{{.Xpos}},{{.Ypos}}));
+	cfp.addCustomFormularElemente(createCustomFormularElement("{{.FeldName}}", "{{.Font}}", {{.Fontsize}}, "{{.FormatFormated}}", {{.Height}}, {{.Listenpos}},{{.Modus}}, {{if .ShowInKarteitext}}true{{else}}false{{end}},{{.Height}},{{.Xpos}},{{.Ypos}}));
 {{- end}}`
 
 
