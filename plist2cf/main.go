@@ -47,6 +47,7 @@ type PlistCFP struct {
 	VarName string
 	
 	Page int `plist:"page"`
+	BackgroundImage string `plist:"backgroundImage"`
 	Cfes []PlistCFE `plist:"customFormularElemente"`
 }
 
@@ -61,18 +62,34 @@ type PlistCFE struct {
 	Listenpos int `plist:"listenpos"`
 	Modus int `plist:"modus"`
 	ShowInKarteitext int `plist:"showInKarteitext"`
+	Visible int `plist:"visible"`
 	Width float32 `plist:"width"`
 	Xpos float32 `plist:"xpos"`
 	Ypos float32 `plist:"ypos"`
 }
 
+func (cfp PlistCFP) BackgroundImageFormated() string {
+
+	str := cfp.BackgroundImage;
+
+	reg, err := regexp.Compile(`\r?\n`)
+	if err != nil {
+    	log.Fatal(err)
+	}	
+	str = reg.ReplaceAllString(str, "\\n\" \n + \"");
+	
+	return str;
+}
+
 func (cf PlistCF) CustomImageFormated() string {
 
-	str := filterNewLines(cf.CustomImage);
+	str := cf.CustomImage;
 
-	re := regexp.MustCompile(`.{200}`) // Every 5 chars
-    parts := re.FindAllString(str, -1) // Split the string into 5 chars blocks.
-    str = strings.Join(parts, "\" \n + \"") // Put the string back together
+	reg, err := regexp.Compile(`\r?\n`)
+	if err != nil {
+    	log.Fatal(err)
+	}	
+	str = reg.ReplaceAllString(str, "\\n\" \n + \"");
 	
 	return str;
 }
@@ -126,13 +143,14 @@ if ({{$.VarName}} == null) {
 	{{range $index, $page := $.Cfps -}} 
 		{{template "page" . }}  
 	{{end}}
-	{{$.VarName}}.setCustomImage("{{.CustomImageFormated}}");
+	{{if ne (len .CustomImageFormated) 0}}{{$.VarName}}.setCustomImage("{{.CustomImageFormated}}");{{end}}
 }
 {{end}}`
 
 const tmplPage = 
 `{{define "page" -}} 
 	cfp = createCustomFormularPage({{.Page}});
+	{{if ne (len .BackgroundImageFormated) 0}}cfp.setBackgroundImage("{{.BackgroundImageFormated}}");{{end}}
 	{{range .Cfes -}} 
 		{{template "element" . }}  
 	{{end}}
@@ -141,7 +159,7 @@ const tmplPage =
 
 const tmplElement = 
 `{{define "element" -}} 
-	cfp.addCustomFormularElemente(createCustomFormularElement("{{.FeldName}}", "{{.Font}}", {{.Fontsize}}, "{{.FormatFormated}}", {{.Height}}, {{.Listenpos}},{{.Modus}}, {{if .ShowInKarteitext}}true{{else}}false{{end}},{{.Height}},{{.Xpos}},{{.Ypos}}));
+	cfp.addCustomFormularElemente(createCustomFormularElement("{{.FeldName}}", "{{.Font}}", {{.Fontsize}}, "{{.FormatFormated}}", {{.Height}}, {{.Listenpos}},{{.Modus}}, {{if .ShowInKarteitext}}true{{else}}false{{end}},{{.Width}},{{.Xpos}},{{.Ypos}}));
 {{- end}}`
 
 
@@ -193,6 +211,15 @@ func main() {
     	data.VarName = reg.ReplaceAllString(strings.ToLower(data.Kuerzel), "")
     	for i, _ := range data.Cfps {
 			data.Cfps[i].VarName = data.VarName
+
+			tmp := data.Cfps[i].Cfes[:0]
+			for j, cfe := range data.Cfps[i].Cfes {
+				if (data.Cfps[i].Cfes[j].Visible == 1) {
+					tmp = append(tmp, cfe)
+				}
+			}
+			data.Cfps[i].Cfes = tmp
+
 			for j, _ := range data.Cfps[i].Cfes {
 				data.Cfps[i].Cfes[j].VarName = data.VarName
 			}
