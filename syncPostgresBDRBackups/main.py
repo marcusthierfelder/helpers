@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 #
 # Multiserver dbs mergen
+#
+# ACHTUNG: python3  ist notwendig
+
+
 
 
 import argparse
@@ -317,6 +321,8 @@ def zip_file(path, filename, out_path, out_filename):
 
 if __name__ == '__main__':
 
+    
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--db_path', action='store',
                         help="Verzeichnis wo beide datenbanken als  db1/  und  /db2/  liegen")
@@ -331,5 +337,7 @@ if __name__ == '__main__':
     pg_path = args.pg_path
     if not pg_path:
         pg_path = "/Applications/Postgres.app/Contents/Versions/latest"
+    if not pg_path:
+        pg_path = "/Applications/tomedoServer.app/Contents/postgresql"
 
     process_tables(db_path, pg_path, args.multiprocessing)

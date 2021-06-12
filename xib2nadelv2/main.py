@@ -103,7 +103,7 @@ def parse_ZSFormPopUpButton(node, xoff, yoff, hPage, wPage, cmFactor, hline):
 def parse_TextField(node, xoff, yoff, hPage, wPage, cmFactor, hline, keypath, modus):
     rect = node.find("rect")
     x = (xoff + float(rect.get("x"))) * cmFactor
-    y = (hPage - (yoff + float(rect.get("y")))) * cmFactor + hline
+    y = (hPage - (yoff + float(rect.get("y")))) * cmFactor
     w = float(rect.get("width")) * cmFactor
 
     if modus == Modus.LENGTH:
@@ -119,15 +119,16 @@ def parse_TextField(node, xoff, yoff, hPage, wPage, cmFactor, hline, keypath, mo
 def parse_ZSFormTextView(node, xoff, yoff, hPage, wPage, cmFactor, hline):
     rect = node.find("rect")
     x = (xoff + float(rect.get("x"))) * cmFactor
-    y = (hPage - (yoff + float(rect.get("y")))) * cmFactor + hline
     w = float(rect.get("width")) * cmFactor
     h = float(rect.get("height")) * cmFactor
     lines = max( int( h/hline + 0.5 ) , 1)
     keypath = get_value_binding(node, 'value')
 
     if lines>1:
+        y = (hPage - (yoff + float(rect.get("y")) + float(rect.get("height")))) * cmFactor + hline
         line = construct_line5(x, y, w, lines, keypath)
     else:
+        y = (hPage - (yoff + float(rect.get("y")))) * cmFactor
         line = construct_line4(x, y, w, keypath)
 
     return {'x': x, 'y': y, 'line': line}
@@ -136,8 +137,8 @@ def parse_ZSFormTextView(node, xoff, yoff, hPage, wPage, cmFactor, hline):
 # ---------------------------------
 def parse_header(node, xoff, yoff, hPage, wPage, cmFactor, hline):
     rect = node.find("rect")
-    x = (xoff + float(rect.get("x"))) * cmFactor
-    y = (hPage - (yoff + float(rect.get("y")) + float(rect.get("height")))) * cmFactor
+    x = 1.0
+    y = 0.5
     line = '[zsnd addKBVHeader:self.formular andPosX:{:2.2f} andPosY:{:2.2f}];'.format(x, y)
     return {'x': 0, 'y': 0, 'line': line}
 
@@ -159,20 +160,20 @@ def get_value_binding(node, name):
 
 
 def construct_line3(x, y, keypath):
-    return '[zsnd addLineAbsolute:[self valueForKey:@"{}"] andPx:{:2.2f} andPy:{:2.2f} andFS:10];'.format(keypath, x, y)
+    return '[zsnd addLineAbsolute:[self valueForKeyPath:@"{}"] andPx:{:2.2f} andPy:{:2.2f} andFS:10];'.format(keypath, x, y)
 
 
 def construct_line3lb(x, y, keypath):
-    return '[zsnd addLaborBarAbsolute:[self valueForKey:@"{}"] andPx:{:2.2f} andPy:{:2.2f} andFS:10];'.format(keypath, x, y)
+    return '[zsnd addLaborBarAbsolute:[self valueForKeyPath:@"{}"] andPx:{:2.2f} andPy:{:2.2f} andFS:10];'.format(keypath, x, y)
 
 
 def construct_line4(x, y, w, keypath):
-    return '[zsnd addLineAbsolute:[self valueForKey:@"{}"] andPx:{:2.2f} andPy:{:2.2f} andFS:10 andLength:{:2.2f}];'.format(
+    return '[zsnd addLineAbsolute:[self valueForKeyPath:@"{}"] andPx:{:2.2f} andPy:{:2.2f} andFS:10 andLength:{:2.2f}];'.format(
         keypath, x, y, w)
 
 
 def construct_line5(x, y, w, lines, keypath):
-    return '[zsnd addLineAbsolute:[self valueForKey:@"{}"] andPx:{:2.2f} andPy:{:2.2f} andFS:10 andLineHeigth:0.85 andLength:{:2.2f} andMaxLines:{}];'.format(
+    return '[zsnd addLineAbsolute:[self valueForKeyPath:@"{}"] andPx:{:2.2f} andPy:{:2.2f} andFS:10 andLineHeigth:0.85 andLength:{:2.2f} andMaxLines:{}];'.format(
         keypath, x, y, w, lines)
 
 
