@@ -59,6 +59,8 @@ def deep_search(node, xoff, yoff, hPage, wPage, cmFactor, hline):
         ret.append(parse_header(node, xoff, yoff, hPage, wPage, cmFactor, hline))
     elif customClass == "ZSCommonArztStempelImageView":
         ret.append(parse_stempel(node, xoff, yoff, hPage, wPage, cmFactor, hline))
+    elif customClass == "ZSFormDateViewWithDirektdruckModification":
+        ret.append(parse_ZSFormTextView(node, xoff, yoff, hPage, wPage, cmFactor, hline))
     elif customClass.startswith("ZSForm"):
         sys.exit(customClass + " muss noch implementiert werden")
     else:
@@ -122,11 +124,23 @@ def parse_ZSFormTextView(node, xoff, yoff, hPage, wPage, cmFactor, hline):
     w = float(rect.get("width")) * cmFactor
     h = float(rect.get("height")) * cmFactor
     lines = max( int( h/hline + 0.5 ) , 1)
+
+    firstLineIdent = 0
+    attrs = node.find("userDefinedRuntimeAttributes")
+    if attrs:
+        for attr in attrs:
+            keypath = attr.get("keyPath")
+            if keypath == "firstLineIdent":
+                firstLineIdent = int(attr.find("integer").get("value"))
+
     keypath = get_value_binding(node, 'value')
 
     if lines>1:
         y = (hPage - (yoff + float(rect.get("y")) + float(rect.get("height")))) * cmFactor + hline
-        line = construct_line5(x, y, w, lines, keypath)
+        if firstLineIdent and firstLineIdent>0:
+            line = construct_line6(x, y, w, lines, firstLineIdent, keypath)
+        else:
+            line = construct_line5(x, y, w, lines, keypath)
     else:
         y = (hPage - (yoff + float(rect.get("y")))) * cmFactor
         line = construct_line4(x, y, w, keypath)
@@ -175,6 +189,12 @@ def construct_line4(x, y, w, keypath):
 def construct_line5(x, y, w, lines, keypath):
     return '[zsnd addLineAbsolute:[self valueForKeyPath:@"{}"] andPx:{:2.2f} andPy:{:2.2f} andFS:10 andLineHeigth:0.85 andLength:{:2.2f} andMaxLines:{}];'.format(
         keypath, x, y, w, lines)
+
+
+def construct_line6(x, y, w, lines, firstLineIdent, keypath):
+    return '[zsnd addLineAbsolute:[self valueForKeyPath:@"{}"] andPx:{:2.2f} andPy:{:2.2f} andFS:10 andLineHeigth:0.85 andLength:{:2.2f} andMaxLines:{} andIndent:{}];'.format(
+        keypath, x, y, w, lines, firstLineIdent)
+
 
 
 # ---------------------------------
