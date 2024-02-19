@@ -62,7 +62,7 @@ def process_table_chunk(von, size, db_creds):
             error = subprocess.check_output(db_cmd, shell=True).decode('utf-8').strip()
             errors.append(error)
         else:
-            s1 = size/2
+            s1 = size // 2  #https://medium.com/code-85/how-to-use-integer-division-in-python-a6b218dd889a
             s2 = size-s1
             p = von + s1
             errors1 = process_table_chunk(von, s1, db_creds)
@@ -82,11 +82,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-p', '--pg_path', action='store', help="Postgres-Verzeichnis")
-    parser.add_argument('-N', '--db_name', action='store', help="db name", nargs='?', default="tomedo")
+    parser.add_argument('-N', '--db_name', action='store', help="db name", nargs='?', default="tomedo_carsh_2020_08_18")
     parser.add_argument('-U', '--db_user', action='store', help="db user", nargs='?', default="tomedo")
-    parser.add_argument('-P', '--db_pwd', action='store', help="db pwd", nargs='?', default="pwd")
-    parser.add_argument('-t', '--db_table', action='store', help="db tabelle", nargs='?', default="change")
-    parser.add_argument('-c', '--db_col', action='store', help="db spalte zum suchen", nargs='?', default="revision")
+    parser.add_argument('-P', '--db_pwd', action='store', help="db pwd", nargs='?', default="tomedo_h8erl0")
+    parser.add_argument('-t', '--db_table', action='store', help="db tabelle", nargs='?', default="formularelement")
+    parser.add_argument('-c', '--db_col', action='store', help="db spalte zum suchen", nargs='?', default="ident")
 
     args = parser.parse_args()
 

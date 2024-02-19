@@ -10,8 +10,8 @@ class Modus(Enum):
 
 
 # ---------------------------------
-def find_CustomView(root):
-    outletName = 'nonBlankoNonImpactView1'
+def find_CustomView(root, page):
+    outletName = 'nonBlankoNonImpactView' + page.__str__()
     destination = find_CustomViewOutlet_destination(root, outletName)
     if not destination:
         sys.exit("kein Outlet auf " + outletName)
@@ -131,7 +131,7 @@ def parse_ZSFormTextView(node, xoff, yoff, hPage, wPage, cmFactor, hline):
         for attr in attrs:
             keypath = attr.get("keyPath")
             if keypath == "firstLineIdent":
-                firstLineIdent = int(attr.find("integer").get("value"))
+                firstLineIdent =  float(attr.find("integer").get("value")) * cmFactor
 
     keypath = get_value_binding(node, 'value')
 
@@ -174,25 +174,25 @@ def get_value_binding(node, name):
 
 
 def construct_line3(x, y, keypath):
-    return '[zsnd addLineAbsolute:[self valueForKeyPath:@"{}"] andPx:{:2.2f} andPy:{:2.2f} andFS:10];'.format(keypath, x, y)
+    return '[zsnd addLineAbsolute:[self valueForKeyPath:ZSnoLS(@"{}")] andPx:{:2.2f} andPy:{:2.2f} andFS:10];'.format(keypath, x, y)
 
 
 def construct_line3lb(x, y, keypath):
-    return '[zsnd addLaborBarAbsolute:[self valueForKeyPath:@"{}"] andPx:{:2.2f} andPy:{:2.2f} andFS:10];'.format(keypath, x, y)
+    return '[zsnd addLaborBarAbsolute:[self valueForKeyPath:ZSnoLS(@"{}")] andPx:{:2.2f} andPy:{:2.2f} andFS:10];'.format(keypath, x, y)
 
 
 def construct_line4(x, y, w, keypath):
-    return '[zsnd addLineAbsolute:[self valueForKeyPath:@"{}"] andPx:{:2.2f} andPy:{:2.2f} andFS:10 andLength:{:2.2f}];'.format(
+    return '[zsnd addLineAbsolute:[self valueForKeyPath:ZSnoLS(@"{}")] andPx:{:2.2f} andPy:{:2.2f} andFS:10 andLength:{:2.2f}];'.format(
         keypath, x, y, w)
 
 
 def construct_line5(x, y, w, lines, keypath):
-    return '[zsnd addLineAbsolute:[self valueForKeyPath:@"{}"] andPx:{:2.2f} andPy:{:2.2f} andFS:10 andLineHeigth:0.85 andLength:{:2.2f} andMaxLines:{}];'.format(
+    return '[zsnd addLineAbsolute:[self valueForKeyPath:ZSnoLS(@"{}")] andPx:{:2.2f} andPy:{:2.2f} andFS:10 andLineHeigth:0.85 andLength:{:2.2f} andMaxLines:{}];'.format(
         keypath, x, y, w, lines)
 
 
 def construct_line6(x, y, w, lines, firstLineIdent, keypath):
-    return '[zsnd addLineAbsolute:[self valueForKeyPath:@"{}"] andPx:{:2.2f} andPy:{:2.2f} andFS:10 andLineHeigth:0.85 andLength:{:2.2f} andMaxLines:{} andIndent:{}];'.format(
+    return '[zsnd addLineAbsolute:[self valueForKeyPath:ZSnoLS(@"{}")] andPx:{:2.2f} andPy:{:2.2f} andFS:10 andLineHeigth:0.85 andLength:{:2.2f} andMaxLines:{} andIndent:{:2.2f}];'.format(
         keypath, x, y, w, lines, firstLineIdent)
 
 
@@ -231,25 +231,28 @@ if __name__ == '__main__':
         sys.exit("size format kombination nocht nicht implementiert  ")
 
     root = ET.parse(args.file).getroot()
-    view = find_CustomView(root)
-    list = deep_search(view, 0., 0., hPage, wPage, cmFactor, hline)
+    for page in range(1,8):
+        view = find_CustomView(root, page)
+        if not view:
+           continue
+        list = deep_search(view, 0., 0., hPage, wPage, cmFactor, hline)
 
 
-    prefix = """
+        prefix = """
 -(BOOL) printWithSerialPrinter:(Drucker*) selectedPrinter
 {
     ZSAssert(selectedPrinter.isSerialPrinter);    
     ZSNadeldrucker* zsnd = [ZSNadeldrucker instanceWithDrucker:selectedPrinter];
     """
-    postfix = """
+        postfix = """
     return [zsnd printAll];
 }
     """
 
-    list.append({'x':0, 'y':-1, 'line':prefix})
-    list.append({'x':0, 'y':9999, 'line':postfix})
+        list.append({'x':0, 'y':-1, 'line':prefix})
+        list.append({'x':0, 'y':9999, 'line':postfix})
 
-    sortedlist = sorted(list , key=lambda elem: "%05.2f %05.2f" % (elem['y'], elem['x']))
+        sortedlist = sorted(list , key=lambda elem: "%05.2f %05.2f" % (elem['y'], elem['x']))
 
-    for elem in sortedlist:
-        print("    " + elem.get('line'))
+        for elem in sortedlist:
+            print("    " + elem.get('line'))
