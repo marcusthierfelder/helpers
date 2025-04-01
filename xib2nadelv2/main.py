@@ -1,6 +1,8 @@
 import argparse
 import xml.etree.ElementTree as ET
 import sys
+from operator import is_not
+from functools import partial
 from enum import Enum
 
 class Modus(Enum):
@@ -47,6 +49,7 @@ def find_destination(node, destination):
 def deep_search(node, xoff, yoff, hPage, wPage, cmFactor, hline):
     ret = []
     customClass = str(node.get('customClass') or '')
+
     if customClass == "ZSFormTextField":
         ret.append(parse_ZSFormTextField(node, xoff, yoff,  hPage, wPage, cmFactor, hline))
     elif customClass == "ZSFormGeschlechtPopUpBotton":
@@ -79,11 +82,14 @@ def deep_search(node, xoff, yoff, hPage, wPage, cmFactor, hline):
 # ---------------------------------
 def parse_ZSFormTextField(node, xoff, yoff, hPage, wPage, cmFactor, hline):
     keypath = get_value_binding(node, 'value')
-    if keypath.startswith("formular.checkbox"):
-        return parse_TextField(node, xoff, yoff, hPage, wPage, cmFactor, hline, keypath, Modus.NONE)
+    if keypath:
+        if keypath.startswith("formular.checkbox"):
+            return parse_TextField(node, xoff, yoff, hPage, wPage, cmFactor, hline, keypath, Modus.NONE)
+        else:
+            return parse_TextField(node, xoff, yoff, hPage, wPage, cmFactor, hline, keypath, Modus.LENGTH)
     else:
-        return parse_TextField(node, xoff, yoff, hPage, wPage, cmFactor, hline, keypath, Modus.LENGTH)
-
+        #sys.exit('kein get_value_binding')
+        return None
 
 def parse_ZSRadioButton(node, xoff, yoff, hPage, wPage, cmFactor, hline):
     keypath = get_value_binding(node, 'value')
@@ -167,10 +173,14 @@ def parse_stempel(node, xoff, yoff, hPage, wPage, cmFactor, hline):
 
 # ---------------------------------
 def get_value_binding(node, name):
-    for con in node.find("connections"):
-        if con.get('name') == name:
-            return con.get('keyPath')
-    sys.exit('kein value binding')
+    cons = node.find("connections")
+    if cons:
+        for con in node.find("connections"):
+            if con.get('name') == name:
+                return con.get('keyPath')
+    else:
+        #sys.exit('kein value binding')
+        return None
 
 
 def construct_line3(x, y, keypath):
@@ -235,7 +245,7 @@ if __name__ == '__main__':
         view = find_CustomView(root, page)
         if not view:
            continue
-        list = deep_search(view, 0., 0., hPage, wPage, cmFactor, hline)
+        myList = deep_search(view, 0., 0., hPage, wPage, cmFactor, hline)
 
 
         prefix = """
@@ -249,10 +259,13 @@ if __name__ == '__main__':
 }
     """
 
-        list.append({'x':0, 'y':-1, 'line':prefix})
-        list.append({'x':0, 'y':9999, 'line':postfix})
+        myList.append({'x':0, 'y':-1, 'line':prefix})
+        myList.append({'x':0, 'y':9999, 'line':postfix})
 
-        sortedlist = sorted(list , key=lambda elem: "%05.2f %05.2f" % (elem['y'], elem['x']))
+        filter_null = partial(filter, partial(is_not, None))
+        myList = list(filter_null(myList))
+
+        sortedlist = sorted(myList, key=lambda elem: "%05.2f %05.2f" % (elem['y'], elem['x']))
 
         for elem in sortedlist:
             print("    " + elem.get('line'))
